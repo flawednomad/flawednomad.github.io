@@ -3,6 +3,11 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
+    <loc>https://flawednomad.github.io/about/</loc>
+    <lastmod>2020-12-09T11:04:48+00:00</lastmod>
+  </url>
+  
+  <url>
     <loc>https://flawednomad.github.io/posts/</loc>
     <lastmod>2020-12-07T18:21:23+00:00</lastmod>
   </url>
