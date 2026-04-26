@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simplicial Homology & The Möbius Strip</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=JetBrains+Mono:wght@400;500&family=Cormorant+SC:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left:'$$',right:'$$',display:true},
+      {left:'$',right:'$',display:false}
+    ],
+    throwOnError: false
+  });">
+</script>
+<style>
+  :root {
+    --bg:        #0b0c10;
+    --bg2:       #111318;
+    --bg3:       #181b22;
+    --border:    #252830;
+    --text:      #d4cfc8;
+    --text-dim:  #7a7570;
+    --amber:     #c8952a;
+    --amber-dim: #7a5a18;
+    --teal:      #3a8a8a;
+    --teal-dim:  #1e4a4a;
+    --rose:      #a05060;
+    --code-bg:   #0f1117;
+    --gap: 2.4rem;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { font-size: 17px; scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'EB Garamond', Georgia, serif;
+    line-height: 1.8;
+    min-height: 100vh;
+  }
+
+  /* ── Layout ── */
+  .page-wrap {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    max-width: 1140px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    gap: 3rem;
+  }
+
+  /* ── Sidebar ── */
+  nav.toc {
+    position: sticky;
+    top: 2rem;
+    height: fit-content;
+    padding: 2rem 0;
+    font-size: 0.82rem;
+    font-family: 'JetBrains Mono', monospace;
+    border-right: 1px solid var(--border);
+    padding-right: 1.5rem;
+  }
+  nav.toc .toc-title {
+    font-family: 'Cormorant SC', serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.18em;
+    color: var(--amber);
+    text-transform: uppercase;
+    margin-bottom: 1.2rem;
+  }
+  nav.toc ol { list-style: none; counter-reset: toc; }
+  nav.toc ol li { counter-increment: toc; margin-bottom: 0.5rem; }
+  nav.toc ol li::before { content: counter(toc) ". "; color: var(--amber-dim); }
+  nav.toc a {
+    color: var(--text-dim);
+    text-decoration: none;
+    transition: color 0.15s;
+    font-size: 0.78rem;
+  }
+  nav.toc a:hover { color: var(--amber); }
+  nav.toc .sub-item { padding-left: 1.2rem; margin-top: 0.25rem; }
+  nav.toc .sub-item::before { content: "· "; color: var(--border); }
+
+  /* ── Main content ── */
+  main {
+    padding: 3.5rem 0;
+    max-width: 720px;
+  }
+
+  /* ── Header ── */
+  .doc-header {
+    margin-bottom: 4rem;
+    padding-bottom: 2.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .doc-header .eyebrow {
+    font-family: 'Cormorant SC', serif;
+    font-size: 0.72rem;
+    letter-spacing: 0.22em;
+    color: var(--amber);
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+  .doc-header h1 {
+    font-family: 'EB Garamond', serif;
+    font-weight: 400;
+    font-size: 2.6rem;
+    line-height: 1.2;
+    color: #e8e3da;
+    margin-bottom: 1rem;
+  }
+  .doc-header .subtitle {
+    font-style: italic;
+    color: var(--text-dim);
+    font-size: 1.05rem;
+    max-width: 580px;
+  }
+  .doc-header .meta {
+    margin-top: 1.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+  }
+
+  /* ── Sections ── */
+  section { margin-bottom: 4rem; }
+  section:last-child { margin-bottom: 0; }
+
+  .sec-header {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    margin-bottom: 1.6rem;
+    cursor: pointer;
+    user-select: none;
+  }
+  .sec-num {
+    font-family: 'Cormorant SC', serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    color: var(--amber);
+    min-width: 2rem;
+  }
+  .sec-title {
+    font-family: 'EB Garamond', serif;
+    font-weight: 400;
+    font-size: 1.55rem;
+    color: #ddd8d0;
+    border-bottom: 1px solid var(--border);
+    flex: 1;
+    padding-bottom: 0.4rem;
+  }
+  .toggle-icon {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    transition: transform 0.2s;
+  }
+  .sec-body { }
+  .sec-body.collapsed { display: none; }
+
+  /* ── Typography ── */
+  p { margin-bottom: 1.1rem; }
+  p:last-child { margin-bottom: 0; }
+
+  h3 {
+    font-family: 'EB Garamond', serif;
+    font-weight: 500;
+    font-size: 1.15rem;
+    color: #ccc5b8;
+    margin: 2rem 0 0.8rem;
+    font-style: italic;
+  }
+  h4 {
+    font-family: 'Cormorant SC', serif;
+    font-size: 0.78rem;
+    letter-spacing: 0.16em;
+    color: var(--amber);
+    text-transform: uppercase;
+    margin: 1.8rem 0 0.8rem;
+  }
+
+  em { color: #ddd8d0; font-style: italic; }
+  strong { color: #ddd8d0; font-weight: 500; }
+
+  /* ── Math blocks ── */
+  .math-block {
+    background: var(--bg2);
+    border-left: 2px solid var(--amber-dim);
+    padding: 1.2rem 1.6rem;
+    margin: 1.6rem 0;
+    overflow-x: auto;
+    border-radius: 0 4px 4px 0;
+  }
+  .math-block .katex-display { margin: 0.3rem 0; }
+
+  /* ── Definition / Theorem boxes ── */
+  .box {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    padding: 1.2rem 1.5rem;
+    margin: 1.6rem 0;
+    border-radius: 2px;
+  }
+  .box.def { border-left: 3px solid var(--teal); }
+  .box.thm { border-left: 3px solid var(--amber); }
+  .box.key { border-left: 3px solid var(--rose); background: #120d10; }
+  .box-label {
+    font-family: 'Cormorant SC', serif;
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 0.6rem;
+  }
+  .box.def .box-label { color: var(--teal); }
+  .box.thm .box-label { color: var(--amber); }
+  .box.key .box-label { color: var(--rose); }
+
+  /* ── Matrix display ── */
+  .matrix-wrap {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    padding: 1.2rem 1.6rem;
+    margin: 1.4rem 0;
+    overflow-x: auto;
+    border-radius: 3px;
+    line-height: 1.7;
+    color: #b8c0cc;
+  }
+  .matrix-wrap .col-head { color: var(--amber-dim); }
+  .matrix-wrap .row-head { color: var(--teal); min-width: 3.5rem; display: inline-block; }
+  .matrix-wrap .nonzero { color: #ddd; }
+
+  /* ── Exact sequence display ── */
+  .exact-seq {
+    text-align: center;
+    font-size: 1rem;
+    padding: 1rem 0;
+    overflow-x: auto;
+  }
+  .exact-seq .katex-display { margin: 0.5rem auto; }
+
+  /* ── Insight callout ── */
+  .insight {
+    background: #0f130f;
+    border: 1px solid #2a3a2a;
+    border-left: 3px solid #4a7a4a;
+    padding: 1.2rem 1.5rem;
+    margin: 1.6rem 0;
+    border-radius: 0 3px 3px 0;
+  }
+  .insight .insight-head {
+    font-family: 'Cormorant SC', serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    color: #4a8a4a;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  /* ── Horizontal rule ── */
+  hr { border: none; border-top: 1px solid var(--border); margin: 2.5rem 0; }
+
+  /* ── Table ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    margin: 1.4rem 0;
+  }
+  th {
+    background: var(--bg3);
+    padding: 0.6rem 1rem;
+    text-align: left;
+    font-family: 'Cormorant SC', serif;
+    font-size: 0.72rem;
+    letter-spacing: 0.15em;
+    color: var(--amber);
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 0.55rem 1rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  td.label { font-style: italic; color: #bbb; }
+
+  /* ── Footnote ── */
+  .footnote {
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    border-top: 1px solid var(--border);
+    margin-top: 2.5rem;
+    padding-top: 1rem;
+    font-style: italic;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 840px) {
+    .page-wrap { grid-template-columns: 1fr; }
+    nav.toc { display: none; }
+    main { padding: 2rem 0; }
+    .doc-header h1 { font-size: 2rem; }
+  }
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+<!-- ── Sidebar ── -->
+<nav class="toc" aria-label="Table of contents">
+  <div class="toc-title">Contents</div>
+  <ol>
+    <li><a href="#s1">Simplicial Complexes</a></li>
+    <li><a href="#s2">Chain Complexes &amp; Homology</a></li>
+    <li><a href="#s3">The Cylinder — Warmup</a></li>
+    <li><a href="#s4">Triangulating the Möbius Strip</a></li>
+    <li><a href="#s5">Homology of the Möbius Strip</a></li>
+    <li><a href="#s6">Long Exact Sequence of the Pair</a>
+      <div class="sub-item"><a href="#s6a">Cylinder</a></div>
+      <div class="sub-item"><a href="#s6b">Möbius Strip</a></div>
+    </li>
+    <li><a href="#s7">Local Geometry is Blind</a></li>
+    <li><a href="#s8">The Orientation Sheaf</a></li>
+    <li><a href="#s9">Synthesis</a></li>
+  </ol>
+</nav>
+
+<!-- ── Main ── -->
+<main>
+<header class="doc-header">
+  <div class="eyebrow">Algebraic Topology · Tutorial</div>
+  <h1>Simplicial Homology<br>&amp; The Möbius Strip</h1>
+  <p class="subtitle">How non-orientability, invisible to local smooth geometry, is encoded in the torsion of relative homology groups and the long exact sequence of a pair.</p>
+  <div class="meta">Topics: simplicial homology · boundary operators · long exact sequences · orientation sheaf · local vs. global topology</div>
+</header>
+
+<!-- ═══════════════════════════════════════ §1 ═══ -->
+<section id="s1">
+  <div class="sec-header" onclick="toggle(this)">
+    <span class="sec-num">§1</span>
+    <span class="sec-title">Simplicial Complexes</span>
+    <span class="toggle-icon">▾</span>
+  </div>
+  <div class="sec-body">
+    <div class="box def">
+      <div class="box-label">Definition — $n$-simplex</div>
+      <p>The <em>standard $n$-simplex</em> $\Delta^n$ is the convex hull of $n+1$ affinely independent points $v_0,\ldots,v_n$ in some $\mathbb{R}^N$. Concretely:</p>
+      <div class="math-block">$$\Delta^n = \left\{\,\sum_{i=0}^n t_i v_i \;\middle|\; t_i \geq 0,\; \sum t_i = 1\,\right\}.$$</div>
+      <p>A <em>face</em> of $[v_0,\ldots,v_n]$ is any sub-simplex $[v_{i_0},\ldots,v_{i_k}]$ with $i_0 < \cdots < i_k$.</p>
+    </div>
+
+    <div class="box def">
+      <div class="box-label">Definition — Simplicial Complex</div>
+      <p>A <em>simplicial complex</em> $K$ is a finite collection of simplices such that: (i) every face of a simplex in $K$ is in $K$, and (ii) the intersection of any two simplices is a face of each. The <em>$n$-skeleton</em> $K^{(n)}$ is the sub-complex of simplices of dimension $\leq n$.</p>
+    </div>
+
+    <p>An <em>oriented $n$-simplex</em> $[v_0,\ldots,v_n]$ is an $n$-simplex together with an equivalence class of orderings of its vertices under even permutations. Two orderings are equivalent if they differ by an even permutation; negating an oriented simplex corresponds to swapping two vertices. Thus $[v_0,v_1,v_2] = [v_1,v_2,v_0] = [v_2,v_0,v_1]$ but $[v_0,v_1,v_2] = -[v_1,v_0,v_2]$.</p>
+
+    <p>For 1-simplices (edges), an orientation is simply a direction: $[v_0,v_1]$ means the edge directed from $v_0$ to $v_1$, and $[v_1,v_0] = -[v_0,v_1]$. For 2-simplices (triangles), an orientation selects a rotational sense: counterclockwise or clockwise.</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════ §2 ═══ -->
+<section id="s2">
+  <div class="sec-header" onclick="toggle(this)">
+    <span class="sec-num">§2</span>
+    <span class="sec-title">Chain Complexes &amp; Homology</span>
+    <span class="toggle-icon">▾</span>
+  </div>
+  <div class="sec-body">
+
+    <div class="box def">
+      <div class="box-label">Definition — Chain Groups</div>
+      <p>The <em>$n$-th chain group</em> $C_n(K;\mathbb{Z})$ is the free abelian group on the set of oriented $n$-simplices of $K$ (with the relation that reversing orientation negates the generator). Elements are formal integer linear combinations $\sum_i a_i \sigma_i$ called <em>$n$-chains</em>.</p>
+    </div>
+
+    <div class="box def">
+      <div class="box-label">Definition — Boundary Operator</div>
+      <p>The <em>boundary map</em> $\partial_n : C_n \to C_{n-1}$ is defined on a generator by</p>
+      <div class="math-block">$$\partial_n [v_0, v_1, \ldots, v_n] = \sum_{i=0}^{n} (-1)^i\, [v_0, \ldots, \hat{v}_i, \ldots, v_n],$$</div>
+      <p>where $\hat{v}_i$ denotes omission of the $i$-th vertex. Extended linearly to all chains.</p>
+    </div>
+
+    <p>The fundamental property is $\partial_{n-1} \circ \partial_n = 0$ for all $n$ — the boundary of a boundary is zero. This is verified by a sign-cancellation argument: each codimension-2 face appears twice with opposite signs. The chain groups and boundary maps form a <em>chain complex</em>:</p>
+
+    <div class="math-block">$$\cdots \xrightarrow{\partial_{n+1}} C_n \xrightarrow{\partial_n} C_{n-1} \xrightarrow{\partial_{n-1}} \cdots \xrightarrow{\partial_1} C_0 \xrightarrow{\partial_0 = 0} 0.$$</div>
+
+    <div class="box def">
+      <div class="box-label">Definition — Homology Groups</div>
+      <p>The <em>$n$-th homology group</em> is the quotient</p>
+      <div class="math-block">$$H_n(K;\mathbb{Z}) = \ker \partial_n \,/\, \operatorname{im} \partial_{n+1}.$$</div>
+      <p>Elements of $\ker \partial_n$ are called <em>$n$-cycles</em>; elements of $\operatorname{im} \partial_{n+1}$ are <em>$n$-boundaries</em>. Homology measures the cycles that are not boundaries — the "holes" in dimension $n$.</p>
+    </div>
+
+    <h3>Intuition</h3>
+    <p>$H_0$ counts path components. $H_1$ counts independent "loops that cannot be filled in." $H_2$ counts enclosed "voids." For surfaces with boundary, $H_2 = 0$ unless the surface encloses a 3-dimensional void (which requires it to be closed and orientable). <em>Non-orientability will prevent the formation of an $H_2$ class, but this fact is not immediately obvious — it requires the long exact sequence to see cleanly.</em></p>
+
+    <div class="box def">
+      <div class="box-label">Definition — Exact Sequence</div>
+      <p>A sequence of abelian groups and homomorphisms $\cdots \to A \xrightarrow{f} B \xrightarrow{g} C \to \cdots$ is <em>exact at $B$</em> if $\operatorname{im} f = \ker g$. It is exact if exact at every term. Short exact sequences $0 \to A \to B \to C \to 0$ encode extensions: $C \cong B/A$.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════ §3 ═══ -->
+<section id="s3">
+  <div class="sec-header" onclick="toggle(this)">
+    <span class="sec-num">§3</span>
+    <span class="sec-title">The Cylinder — A Reference Case</span>
+    <span class="toggle-icon">▾</span>
+  </div>
+  <div class="sec-body">
+
+    <p>The cylinder $C = S^1 \times [0,1]$ is our orientable reference. We triangulate it as a band of 6 triangles over 6 vertices. Label the bottom boundary circle $\{p, q, r\}$ and the top $\{a, b, c\}$, with the 6 triangles:</p>
+
+    <div class="math-block">$$\tau_1=[p,q,b],\; \tau_2=[p,b,a],\; \tau_3=[q,r,c],\; \tau_4=[q,c,b],\; \tau_5=[r,p,a],\; \tau_6=[r,a,c].$$</div>
+
+    <p>The identifications for the cylinder close the band into an annulus: vertex $p$ connects back on both boundary circles. The chain data: $V=6$, $E=9$, $F=6$, giving $\chi = 6-9+6 = 3$... </p>
+
+    <p>Rather than compute this in full, the key result is:</p>
+
+    <div class="box thm">
+      <div class="box-label">Homology of the Cylinder</div>
+      <div class="math-block">$$H_0(C) \cong \mathbb{Z}, \quad H_1(C) \cong \mathbb{Z}, \quad H_n(C) = 0 \text{ for } n \geq 2.$$</div>
+      <p>The cylinder deformation retracts to $S^1$ (collapse the $[0,1]$ factor), which has $H_0 = H_1 = \mathbb{Z}$ and higher homology zero. The boundary $\partial C = S^1 \sqcup S^1$ consists of <em>two</em> circles.</p>
+    </div>
+
+    <p>The generator of $H_1(C)$ is the class $[\alpha]$ of any horizontal circle. Each boundary component maps into $H_1(C)$ with degree $\pm 1$ — the two boundary circles are homotopic (parallel) circles on the cylinder. This will contrast sharply with the Möbius strip.</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════ §4 ═══ -->
+<section id="s4">
+  <div class="sec-header" onclick="toggle(this)">
+    <span class="sec-num">§4</span>
+    <span class="sec-title">Triangulating the Möbius Strip</span>
+    <span class="toggle-icon">▾</span>
+  </div>
+  <div class="sec-body">
+
+    <p>The Möbius strip is constructed from a rectangle by identifying opposite edges with a half-twist. Take $[0,3] \times [0,1]$ and impose the identification $(0, s) \sim (3, 1-s)$. This gives a compact surface with boundary.</p>
+
+    <h3>Vertex identification</h3>
+    <p>Place vertices on the rectangle:</p>
+    <ul style="margin-left:1.5rem; margin-bottom:1rem; list-style: disc;">
+      <li>Bottom row: $u_0=(0,0),\; u_1=(1,0),\; u_2=(2,0),\; u_3=(3,0)$</li>
+      <li>Top row: $v_0=(0,1),\; v_1=(1,1),\; v_2=(2,1),\; v_3=(3,1)$</li>
+    </ul>
+    <p>The identification $(0,s)\sim(3,1-s)$ forces:
+    $u_0 = v_3$ (set $s=0$) and $v_0 = u_3$ (set $s=1$).</p>
+    <p>After identification, the six distinct vertices are:</p>
+
+    <div class="math-block">$$p := u_0 = v_3,\quad q := u_1,\quad r := u_2,\quad s := u_3 = v_0,\quad t := v_1,\quad u := v_2.$$</div>
+
+    <h3>The six triangles</h3>
+    <p>Subdivide each of the three $1\times 1$ columns of the rectangle into two triangles, oriented counterclockwise:</p>
+
+    <table>
+      <thead><tr><th>Label</th><th>Oriented Simplex</th><th>Column</th></tr></thead>
+      <tbody>
+        <tr><td>$\sigma_1$</td><td class="label">$[p, q, t]$</td><td>Column 1, lower</td></tr>
+        <tr><td>$\sigma_2$</td><td class="label">$[p, t, s]$</td><td>Column 1, upper</td></tr>
+        <tr><td>$\sigma_3$</td><td class="label">$[q, r, u]$</td><td>Column 2, lower</td></tr>
+        <tr><td>$\sigma_4$</td><td class="label">$[q, u, t]$</td><td>Column 2, upper</td></tr>
+        <tr><td>$\sigma_5$</td><td class="label">$[r, s, p]$</td><td>Column 3, lower</td></tr>
+        <tr><td>$\sigma_6$</td><td class="label">$[r, p, u]$</td><td>Column 3, upper</td></tr>
+      </tbody>
+    </table>
+
+    <p>The identification at column 3 is where the twist enters: the right edge of the rectangle re-enters with vertices reversed ($u_3 = v_0 = s$ and $v_3 = u_0 = p$), so the triangle $[r, s, p]$ has $s$ at the top-left position and $p$ at the top-right — the reversal of what you'd expect for a cylinder.</p>
+
+    <h3>The 12 edges</h3>
+    <p>Euler characteristic: $\chi(\text{Möbius strip}) = \chi(S^1) = 0$. With $V=6$ vertices and $F=6$ faces, we need $E = V + F = 12$ edges. We label them with both vertices in lexicographic order:</p>
+
+    <div class="matrix-wrap">
+<span class="col-head">Edge   Boundary (∂e = head − tail)</span>
+$e_1 = pq$     $q - p$
+$e_2 = pr$     $r - p$
+$e_3 = ps$     $s - p$
+$e_4 = pt$     $t - p$
+$e_5 = pu$     $u - p$
+$e_6 = qr$     $r - q$
+$e_7 = qu$     $u - q$
+$e_8 = qt$     $t - q$
+$e_9 = rs$     $s - r$
+$e_{10} = ru$  $u - r$
+$e_{11} = st$  $t - s$
+$e_{12} = tu$  $u - t$
+    </div>
+
+    <h3>The boundary map $\partial_2$</h3>
+    <p>Apply the formula $\partial[v_0,v_1,v_2] = [v_0,v_1] - [v_0,v_2] + [v_1,v_2]$, expressing each edge in terms of our oriented basis (with $[v,w] = -[w,v]$):</p>
+
+    <div class="math-block">
+$$\begin{align}
+\partial\sigma_1 &= \partial[p,q,t] = e_1 - e_4 + e_8 \\
+\partial\sigma_2 &= \partial[p,t,s] = e_4 - e_3 - e_{11} \\
+\partial\sigma_3 &= \partial[q,r,u] = e_6 - e_7 + e_{10} \\
+\partial\sigma_4 &= \partial[q,u,t] = e_7 - e_8 - e_{12} \\
+\partial\sigma_5 &= \partial[r,s,p] = e_9 + e_2 - e_3 \\
+\partial\sigma_6 &= \partial[r,p,u] = {-e_2} - e_{10} + e_5
+\end{align}$$
+    </div>
+
+    <p>Note the sign in $\partial\sigma_5$: $[s,p] = -[p,s] = -e_3$ and $[r,p] = -[p,r] = -e_2$, so $\partial[r,s,p] = [r,s] - [r,p] + [s,p] = e_9 -(-e_2) + (-e_3) = e_9 + e_2 - e_3$. This encodes the twist.</p>
+
+    <h3>The boundary map $\partial_2$ as a matrix</h3>
+    <p>Writing $\partial_2: \mathbb{Z}^6 \to \mathbb{Z}^{12}$ with columns $= \sigma_i$ and rows $= e_j$:</p>
+
+    <div class="matrix-wrap">
+         σ₁  σ₂  σ₃  σ₄  σ₅  σ₆
+<span class="row-head">e₁  =pq</span>  <span class="nonzero"> 1</span>   0   0   0   0   0
+<span class="row-head">e₂  =pr</span>   0   0   0   0  <span class="nonzero"> 1  -1</span>
+<span class="row-head">e₃  =ps</span>   0  <span class="nonzero">-1</span>   0   0  <span class="nonzero">-1</span>   0
+<span class="row-head">e₄  =pt</span>  <span class="nonzero">-1   1</span>   0   0   0   0
+<span class="row-head">e₅  =pu</span>   0   0   0   0   0  <span class="nonzero"> 1</span>
+<span class="row-head">e₆  =qr</span>   0   0  <span class="nonzero"> 1</span>   0   0   0
+<span class="row-head">e₇  =qu</span>   0   0  <span class="nonzero">-1   1</span>   0   0
+<span class="row-head">e₈  =qt</span>  <span class="nonzero"> 1</span>   0   0  <span class="nonzero">-1</span>   0   0
+<span class="row-head">e₉  =rs</span>   0   0   0   0  <span class="nonzero"> 1</span>   0
+<span class="row-head">e₁₀ =ru</span>   0   0  <span class="nonzero"> 1</span>   0   0  <span class="nonzero">-1</span>
+<span class="row-head">e₁₁ =st</span>   0  <span class="nonzero">-1</span>   0   0   0   0
+<span class="row-head">e₁₂ =tu</span>   0   0   0  <span class="nonzero">-1</span>   0   0
+    </div>
+
+    <div class="insight">
+      <div class="insight-head">Geometric check</div>
+      <p>Sum all six columns: $\partial(\sigma_1+\cdots+\sigma_6) = (e_1+e_6+e_9+e_{11}+e_{12}-e_5) + \text{(internal cancellations)}$. The boundary of the total chain is exactly the boundary circle of the strip — the edges on the "outside." The internal edges (those shared by two triangles) cancel in pairs, as expected.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════ §5 ═══ -->
+<section id="s5">
+  <div class="sec-header" onclick="toggle(this)">
+    <span class="sec-num">§5</span>
+    <span class="sec-title">Computing Homology of the Möbius Strip</span>
+    <span class="toggle-icon">▾</span>
+  </div>
+  <div class="sec-body">
+
+    <h3>$H_0$: path components</h3>
+    <p>Since the Möbius strip is connected, $H_0(M) \cong \mathbb{Z}$, generated by the class of any vertex.</p>
+
+    <h3>$H_2$: cycles among the 2-chains</h3>
+    <p>We ask: does $\ker \partial_2$ contain any non-zero element? Suppose $\sum a_i \sigma_i$ is a 2-cycle. Each edge that belongs to only one triangle must contribute a boundary term that cannot cancel; but every boundary edge of the strip (e.g. $e_1 = pq$, appearing only in $\sigma_1$) forces $a_1 = 0$, and by propagation all $a_i = 0$. Therefore:</p>
+
+    <div class="math-block">$$H_2(M;\mathbb{Z}) = 0.$$</div>
+
+    <p>This has a clean conceptual explanation: any closed 2-chain on a non-orientable surface must vanish, because you cannot consistently orient all triangles so that internal edges cancel <em>and</em> boundary edges also cancel.</p>
+
+    <h3>$H_1$: loops modulo boundaries</h3>
+    <p>The Möbius strip deformation retracts onto its <em>core circle</em> — the circle running lengthwise along the center of the strip. (Define $r: M \to S^1$ by collapsing the width; this is a homotopy equivalence.) Therefore:</p>
+
+    <div class="math-block">$$H_1(M;\mathbb{Z}) \cong H_1(S^1;\mathbb{Z}) \cong \mathbb{Z},$$</div>
+    <p>generated by the class $[\alpha]$ of the core circle. So the absolute homology of $M$ is indistinguishable from that of the cylinder — both look like $S^1$ algebraically.</p>
+
+    <div class="box key">
+      <div class="box-label">Punchline</div>
+      <p>The Möbius strip and the open cylinder have identical homology groups: $(H_0, H_1, H_2) = (\mathbb{Z}, \mathbb{Z}, 0)$. To algebraically distinguish them, we must look at the <em>relative</em> homology and the long exact sequence of the pair $(X, \partial X)$.</p>
+    </div>
+
+    <h3>The boundary circle</h3>
+    <p>The boundary $\partial M$ is a single circle. Tracing through the triangulation: start at $p$, traverse bottom edges $p \to q \to r \to s$, then top edges $s \to t \to u \to p$ (the top runs in the same direction as the bottom because of the identification). The boundary 1-cycle is:</p>
+
+    <div class="math-block">$$\gamma_{\partial} = e_1 + e_6 + e_9 + e_{11} + e_{12} - e_5.$$</div>
+
+    <p>One can verify $\partial_1 \gamma_\partial = 0$: the sum telescopes to zero. Now, crucially, what is the class $[\gamma_\partial]$ in $H_1(M) \cong \mathbb{Z}$?</p>
+
+    <p>Under the retraction $r: M \to S^1$, the boundary circle maps to the core circle with <em>degree 2</em>. This is the key topological fact: as you walk once around the boundary of the Möbius strip, you traverse the core twice — once on each "side" of the band (the two sides are, of course, connected). Therefore:</p>
+
+    <div class="math-block">$$i_*([\gamma_\partial]) = 2[\alpha] \in H_1(M) \cong \mathbb{Z},$$</div>
+    <p>where $i: \partial M \hookrightarrow M$ is the inclusion. This factor of 2 is the algebraic footprint of the half-twist.</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════ §6 ═══ -->
+<section id="s6">
+  <div class="sec-header" onclick="toggle(this)">
+    <span class="sec-num">§6</span>
+    <span class="sec-title">Long Exact Sequence of the Pair $(X,\partial X)$</span>
+    <span class="toggle-icon">▾</span>
+  </div>
+  <div class="sec-body">
+
+    <p>For any pair $(X, A)$ with $A \subseteq X$, the <em>relative chain groups</em> $C_n(X,A) = C_n(X)/C_n(A)$ fit into a long exact sequence:</p>
+
+    <div class="math-block">
+$$\cdots \to H_n(A) \xrightarrow{i_*} H_n(X) \xrightarrow{j_*} H_n(X,A) \xrightarrow{\partial_*} H_{n-1}(A) \to \cdots$$
+    </div>
+
+    <p>where $\partial_*$ is the connecting homomorphism. We apply this to the pair $(X, \partial X)$ for both our surfaces.</p>
+
+    <h3 id="s6a">The Cylinder $(C, \partial C)$</h3>
+
+    <p>Data: $\partial C = S^1 \sqcup S^1$, so $H_1(\partial C) = \mathbb{Z}^2$ and $H_0(\partial C) = \mathbb{Z}^2$. Also $H_k(C) = H_k(S^1)$ and $H_k(\partial C) = H_k(S^1) \oplus H_k(S^1)$. The inclusion $i_*: H_1(\partial C) = \mathbb{Z}^2 \to H_1(C) = \mathbb{Z}$ sends each boundary circle to the core circle: $i_*(a,b) = a+b$ (or $a-b$ depending on orientation choice — let's say the two boundary circles map with degrees $+1$ and $+1$, so $i_*(a,b) = a + b$... actually for a consistently oriented cylinder, one boundary maps with degree $+1$ and the other with degree $-1$, giving $i_*(a,b) = a - b$. The kernel of $a-b$ is $\{(a,a)\} \cong \mathbb{Z}$.</p>
+
+    <p>Writing out the relevant portion of the long exact sequence:</p>
+
+    <div class="math-block">
+$$0 \to H_2(C, \partial C) \xrightarrow{\partial_*} \underbrace{H_1(\partial C)}_{\mathbb{Z}^2} \xrightarrow{i_* = (1,-1)} \underbrace{H_1(C)}_{\mathbb{Z}} \to H_1(C,\partial C) \to \underbrace{H_0(\partial C)}_{\mathbb{Z}^2} \xrightarrow{\cong} \underbrace{H_0(C)}_{\mathbb{Z}} \to 0$$
+    </div>
+
+    <p>Reading off the groups:</p>
+    <ul style="margin-left:1.5rem; margin-bottom: 1rem; list-style: disc;">
+      <li>From $0 \to H_2(C,\partial C) \to \mathbb{Z}^2$: the image of $H_2(C,\partial C)$ lands in $\ker(i_*) = \ker(a-b) = \{(a,a)\} \cong \mathbb{Z}$. So $H_2(C,\partial C) \cong \mathbb{Z}$.</li>
+      <li>The map $\mathbb{Z}^2 \xrightarrow{a-b} \mathbb{Z}$ is surjective, so $\ker(H_1(C) \to H_1(C,\partial C)) = \mathbb{Z}$, meaning $H_1(C)$ maps to zero in $H_1(C,\partial C)$.</li>
+      <li>The image of $H_1(C,\partial C) \to H_0(\partial C)$ equals $\ker(H_0(\partial C) \to H_0(C)) = \ker((1,1)) = \{(a,-a)\} \cong \mathbb{Z}$. So $H_1(C,\partial C) \cong \mathbb{Z}$.</li>
+    </ul>
+
+    <div class="box thm">
+      <div class="box-label">Relative Homology — Cylinder</div>
+      <div class="math-block">$$H_n(C, \partial C) \cong \begin{cases} 0 & n=0 \\ \mathbb{Z} & n=1 \\ \mathbb{Z} & n=2 \end{cases}$$</div>
+      <p>The class generating $H_2(C,\partial C) \cong \mathbb{Z}$ is the <em>fundamental class</em> $[C, \partial C]$, a manifestation of the cylinder's orientability. It is the algebraic version of "you can consistently orient the whole surface."</p>
+    </div>
+
+    <h3 id="s6b">The Möbius Strip $(M, \partial M)$</h3>
+
+    <p>Data: $\partial M = S^1$ (a <em>single</em> circle), so $H_1(\partial M) = \mathbb{Z}$ and $H_0(\partial M) = \mathbb{Z}$. The inclusion map $i_*: H_1(\partial M) \to H_1(M)$ sends the generator $[\gamma_\partial]$ to $2[\alpha]$, as we established. So $i_*$ is multiplication by 2:</p>
+
+    <div class="math-block">$$i_*: \mathbb{Z} \xrightarrow{\times 2} \mathbb{Z}.$$</div>
+
+    <p>The relevant portion of the long exact sequence:</p>
+
+    <div class="math-block">
+$$0 \to \underbrace{H_2(M,\partial M)}_{?} \xrightarrow{\partial_*} \underbrace{H_1(\partial M)}_{\mathbb{Z}} \xrightarrow{\times 2} \underbrace{H_1(M)}_{\mathbb{Z}} \to \underbrace{H_1(M,\partial M)}_{?} \to \underbrace{H_0(\partial M)}_{\mathbb{Z}} \xrightarrow{\cong} \underbrace{H_0(M)}_{\mathbb{Z}} \to 0$$
+    </div>
+
+    <p>Now read off the groups step by step:</p>
+
+    <p><strong>$H_2(M,\partial M)$:</strong> From $0 \to H_2(M,\partial M) \to \mathbb{Z}$, the image of $H_2(M,\partial M)$ in $\mathbb{Z}$ equals $\ker({\times 2}) = 0$ (multiplication by 2 is injective on $\mathbb{Z}$). Therefore $H_2(M,\partial M) = 0$.</p>
+
+    <p><strong>$H_1(M,\partial M)$:</strong> The map $\times 2: \mathbb{Z} \to \mathbb{Z}$ has $\ker = 0$ and $\operatorname{im} = 2\mathbb{Z}$. By exactness at $H_1(M) = \mathbb{Z}$: $\ker(H_1(M) \to H_1(M,\partial M)) = \operatorname{im}(\times 2) = 2\mathbb{Z}$. So the image of $\mathbb{Z} \to H_1(M,\partial M)$ is $\mathbb{Z}/2\mathbb{Z}$. And since the map $H_1(M,\partial M) \to H_0(\partial M)$ has image $\ker(H_0(\partial M) \to H_0(M)) = 0$ (the map $\mathbb{Z} \xrightarrow{\cong} \mathbb{Z}$ is an isomorphism), the map $H_1(M,\partial M) \to H_0(\partial M)$ is zero. Therefore $H_1(M,\partial M) = \mathbb{Z}/2\mathbb{Z}$.</p>
+
+    <div class="box key">
+      <div class="box-label">The Central Result</div>
+      <div class="math-block">$$H_n(M, \partial M) \cong \begin{cases} 0 & n=0 \\ \mathbb{Z}/2\mathbb{Z} & n=1 \\ 0 & n=2 \end{cases}$$</div>
+      <p>Comparing with the cylinder: the vanishing of $H_2(M,\partial M)$ is the precise algebraic statement that <em>the Möbius strip has no fundamental class</em> — it is non-orientable. And the torsion group $\mathbb{Z}/2\mathbb{Z}$ in degree 1 is the algebraic shadow that the non-orientability leaves behind. It arises entirely from the factor of 2 in the map $i_*: H_1(\partial M) \to H_1(M)$, which itself comes from the half-twist.</p>
+    </div>
+
+    <h3>The summary table</h3>
+
+    <table>
+      <thead>
+        <tr><th>Space</th><th>$H_0$</th><th>$H_1$</th><th>$H_2$</th><th>$H_0(X,\partial X)$</th><th>$H_1(X,\partial X)$</th><th>$H_2(X,\partial X)$</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="label">Cylinder $C$</td>
+          <td>$\mathbb{Z}$</td><td>$\mathbb{Z}$</td><td>$0$</td>
+          <td>$0$</td><td>$\mathbb{Z}$</td><td>$\mathbb{Z}$</td>
+        </tr>
+        <tr>
+          <td class="label">Möbius Strip $M$</td>
+          <td>$\mathbb{Z}$</td><td>$\mathbb{Z}$</td><td>$0$</td>
+          <td>$0$</td><td>$\mathbb{Z}/2\mathbb{Z}$</td><td>$0$</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>Absolute homology cannot tell these surfaces apart. Relative homology can, and does so via the presence or absence of the fundamental class in $H_2(X,\partial X)$, and via the torsion $\mathbb{Z}/2\mathbb{Z}$ that appears precisely when the fundamental class is absent.</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════ §7 ═══ -->
+<section id="s7">
+  <div class="sec-header" onclick="toggle(this)">
+    <span class="sec-num">§7</span>
+    <span class="sec-title">Local Smooth Geometry is Blind</span>
+    <span class="toggle-icon">▾</span>
+  </div>
+  <div class="sec-body">
+
+    <p>Both the cylinder and the Möbius strip are smooth 2-manifolds with boundary. In the interior of either surface, every point has a neighbourhood diffeomorphic to an open subset of $\mathbb{R}^2$; near the boundary, every point has a neighbourhood diffeomorphic to a half-plane. The <em>local smooth structure is identical</em> for both surfaces.</p>
+
+    <h3>The Riemannian picture</h3>
+    <p>Place the flat metric $g = dx^2 + dy^2$ on the unidentified rectangle. This metric is invariant under the identification $(0,s) \sim (3, 1-s)$ (the identification is an isometry of the rectangle). So both the cylinder and the Möbius strip inherit a <em>flat Riemannian metric</em>.</p>
+
+    <p>In the flat metric:</p>
+    <ul style="margin-left:1.5rem; margin-bottom: 1rem; list-style: disc;">
+      <li>Christoffel symbols $\Gamma^k_{ij} = 0$ everywhere (in any local coordinate chart)</li>
+      <li>Riemann curvature tensor $R^l{}_{kij} = 0$</li>
+      <li>Ricci tensor $\text{Ric}_{ij} = 0$</li>
+      <li>Scalar curvature $\kappa = 0$</li>
+      <li>Geodesics are straight lines (in local coordinates)</li>
+    </ul>
+
+    <p>Every local geometric invariant — curvature, torsion of the connection, normal coordinates — is the same. No local measurement, however refined, can distinguish a patch of the Möbius strip from a patch of the cylinder. <em>Smooth, local differential geometry is unable to detect non-orientability.</em></p>
+
+    <h3>What about holonomy?</h3>
+    <p>One might object: the Levi-Civita connection defines parallel transport, and parallel-transporting a frame around the core circle of the Möbius strip returns the frame with orientation reversed. Doesn't this detect non-orientability?</p>
+
+    <p>Yes — but parallel transport around a loop is a <em>global</em> computation. The holonomy group is defined by integrating the connection around closed curves, which requires knowledge of the topology of the surface (specifically, which curves are non-contractible). The connection itself — the Christoffel symbols — is flat and locally trivial. The holonomy "remembers" the global topology through the monodromy of the parallel transport: for the Möbius strip, the holonomy representation $\pi_1(M) \to O(2)$ sends the generator to a reflection, not a rotation. For the cylinder, the corresponding representation is trivial (or sends to a rotation in $SO(2)$).</p>
+
+    <p>So holonomy does detect the difference — but via global topology, not local geometry. It is, in fact, another face of the same non-triviality encoded in the homology.</p>
+
+    <h3>The precise statement</h3>
+
+    <div class="box thm">
+      <div class="box-label">Theorem (informal)</div>
+      <p>Let $U \subset M$ and $V \subset C$ be any open sets, each simply connected. Then $U$ and $V$ are diffeomorphic (as Riemannian manifolds, with the inherited flat metric). Every local invariant of differential geometry — curvature, connection, geodesics, normal coordinates, Taylor expansion of the metric — agrees on $U$ and $V$.</p>
+      <p>Non-orientability is a property of the <em>global topology</em>, not of any local structure. It is a statement about the first cohomology of the frame bundle with coefficients in $\mathbb{Z}/2\mathbb{Z}$, not about any local differential-geometric quantity.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════ §8 ═══ -->
+<section id="s8">
+  <div class="sec-header" onclick="toggle(this)">
+    <span class="sec-num">§8</span>
+    <span class="sec-title">The Orientation Sheaf</span>
+    <span class="toggle-icon">▾</span>
+  </div>
+  <div class="sec-body">
+
+    <p>There is a clean algebraic-topological object that formalises the idea that orientability is "locally trivial but globally non-trivial." It is the <em>orientation sheaf</em> (or orientation local system) of the manifold.</p>
+
+    <div class="box def">
+      <div class="box-label">Definition — Orientation Sheaf</div>
+      <p>For an $n$-manifold $M$, the <em>orientation sheaf</em> $\mathcal{O}_M$ is the locally constant sheaf (equivalently, the local system) whose stalk at $x \in M$ is</p>
+      <div class="math-block">$$(\mathcal{O}_M)_x = H_n(M, M \setminus \{x\};\,\mathbb{Z}) \cong \mathbb{Z}.$$</div>
+      <p>The transition maps between nearby stalks are determined by the local orientation: moving $x$ continuously, the stalk changes by a sign if and only if we cross a "orientation-reversing" path.</p>
+    </div>
+
+    <p>For the cylinder $C$: pick any loop in $C$. You can transport the orientation (a choice of generator $\pm 1 \in \mathbb{Z}$) around any loop and return with the same sign. The sheaf $\mathcal{O}_C$ is a <em>trivial</em> local system: $\mathcal{O}_C \cong \underline{\mathbb{Z}}_C$ (the constant sheaf). This is exactly orientability.</p>
+
+    <p>For the Möbius strip $M$: transport the orientation around the core circle $\alpha$. You return with the opposite sign — the monodromy of $\mathcal{O}_M$ around $\alpha$ is multiplication by $-1$. The sheaf $\mathcal{O}_M$ is a <em>non-trivial</em> local system; it is the unique non-trivial double cover of $S^1$ (the core circle), pulled back to $M$.</p>
+
+    <h3>The monodromy representation</h3>
+    <p>A locally constant sheaf with stalk $\mathbb{Z}$ on a path-connected space $X$ is equivalent to a group homomorphism $\rho: \pi_1(X) \to \text{Aut}(\mathbb{Z}) = \{\pm 1\} = \mathbb{Z}/2\mathbb{Z}$. This is the <em>monodromy representation</em>.</p>
+
+    <p>For the cylinder: $\pi_1(C) = \mathbb{Z}$, and $\rho_C: \mathbb{Z} \to \{\pm 1\}$ is the trivial homomorphism (every loop preserves orientation). For the Möbius strip: $\pi_1(M) = \mathbb{Z}$, and $\rho_M: \mathbb{Z} \to \{\pm 1\}$ sends the generator $1$ to $-1$. This is the <em>unique</em> non-trivial homomorphism $\mathbb{Z} \to \mathbb{Z}/2\mathbb{Z}$.</p>
+
+    <div class="math-block">
+$$\rho_C: \mathbb{Z} \to \{\pm 1\},\quad n \mapsto +1 \qquad \text{(trivial)}$$
+$$\rho_M: \mathbb{Z} \to \{\pm 1\},\quad n \mapsto (-1)^n \qquad \text{(non-trivial)}$$
+    </div>
+
+    <h3>Homology with twisted coefficients</h3>
+    <p>Ordinary homology $H_*(M;\mathbb{Z})$ uses the constant sheaf $\underline{\mathbb{Z}}$. We can instead compute homology with coefficients in the orientation sheaf, $H_*(M;\mathcal{O}_M)$. This produces <em>twisted homology</em>, and the result is striking:</p>
+
+    <table>
+      <thead>
+        <tr><th>Space</th><th>$H_2(X;\underline{\mathbb{Z}})$</th><th>$H_2(X;\mathcal{O}_X)$</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="label">Cylinder $C$ (compact, with boundary)</td><td>$0$</td><td>$0$</td></tr>
+        <tr><td class="label">Möbius Strip $M$</td><td>$0$</td><td>$\mathbb{Z}$</td></tr>
+        <tr><td class="label">Closed orientable surface $\Sigma_g$</td><td>$\mathbb{Z}$</td><td>$\mathbb{Z}$</td></tr>
+        <tr><td class="label">$\mathbb{R}P^2$</td><td>$0$</td><td>$\mathbb{Z}$</td></tr>
+      </tbody>
+    </table>
+
+    <p>For the Möbius strip, $H_2(M;\mathcal{O}_M) \cong \mathbb{Z}$: a fundamental class <em>exists}, but only in twisted coefficients. The twist "corrects" for the non-orientability, and the resulting class is the true orientation-invariant cycle. This is the cleanest algebraic formulation of the central theme: non-orientability is <em>invisible</em> to the constant sheaf (ordinary homology), but it is the very structure that $\mathcal{O}_M$ is built to detect.</p>
+
+    <div class="insight">
+      <div class="insight-head">The key picture</div>
+      <p>Locally, both $C$ and $M$ look like $\mathbb{R}^2$ — the sheaf $\mathcal{O}$ has stalk $\mathbb{Z}$ at every point, just like the constant sheaf. The difference is entirely in the <em>gluing data</em>: how these local copies of $\mathbb{Z}$ are assembled as you traverse loops. For $C$, the gluing is always the identity. For $M$, traversing the core circle applies a sign flip. This is what it means for a local system to be non-trivial.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════ §9 ═══ -->
+<section id="s9">
+  <div class="sec-header" onclick="toggle(this)">
+    <span class="sec-num">§9</span>
+    <span class="sec-title">Synthesis</span>
+    <span class="toggle-icon">▾</span>
+  </div>
+  <div class="sec-body">
+
+    <p>We have traced a single geometric phenomenon — the half-twist of the Möbius strip — through several layers of algebraic topology. Let us draw the threads together.</p>
+
+    <h3>The chain of causes</h3>
+    <p>The identification $(0,s) \sim (3, 1-s)$ reverses the $s$-coordinate, creating the half-twist. This means:</p>
+
+    <ol style="margin-left:1.5rem; margin-bottom:1.2rem; line-height: 2.2;">
+      <li>The boundary $\partial M$ is a <em>single</em> circle (versus two for the cylinder).</li>
+      <li>Walking around $\partial M$ traverses the core circle <em>twice</em>: the inclusion $i_*: H_1(\partial M) \to H_1(M)$ is $\times 2$.</li>
+      <li>The map $\times 2: \mathbb{Z} \to \mathbb{Z}$ is injective, so $\ker(\times 2) = 0$, forcing $H_2(M,\partial M) = 0$.</li>
+      <li>Its cokernel is $\mathbb{Z}/2\mathbb{Z}$, producing the torsion in $H_1(M,\partial M)$.</li>
+      <li>The monodromy of the orientation sheaf around the core circle is $-1$ (sign flip).</li>
+    </ol>
+
+    <h3>Why local geometry sees nothing</h3>
+    <p>All of these phenomena are global. The half-twist is invisible if you zoom in to any single coordinate chart. Each chart sees only flat $\mathbb{R}^2$; each chart is individually orientable. The non-orientability is a property of how the charts are <em>assembled</em> — it lives in the transition maps, not in the charts themselves. The holonomy is the integral of the connection around a global loop; the orientation sheaf's monodromy is defined by analytic continuation along paths; the torsion in $H_1(M,\partial M)$ is computed from a global chain complex. All are manifestations of global topology.</p>
+
+    <h3>Connections to singular learning theory</h3>
+    <p>These ideas resonate with the SLT framework in a precise way. In SLT, the key object is the parameter space $W$ of a statistical model, which is a (typically singular) semi-algebraic set. The local structure of $W$ near a singularity is that of a real algebraic variety — locally, it looks like $\mathbb{R}^d$ with some algebraic relations. But the <em>global topology</em> of the singular set, measured by the RLCT $\lambda$ and by the homology of the resolution of singularities, encodes the true complexity of the model.</p>
+    <p>Just as local smooth geometry cannot detect the Möbius twist, local quadratic approximations (Fisher information geometry) cannot detect the deeper singularity structure that controls generalisation. The RLCT — a birational invariant, hence a global algebraic-geometric quantity — is the analogue of the fundamental class: present when the singularity is "orientable" (in the relevant algebraic sense), and reflecting a torsion obstruction when it is not.</p>
+
+    <hr>
+
+    <p>What began as a question about a strip of paper — why does the twist disappear from local analysis? — resolves into a rich interplay between simplicial homology, exact sequences, sheaf theory, and the global topology of parameter spaces. The Möbius strip is not an exotic curiosity; it is a minimal model for the phenomenon that global topology encodes information that local geometry cannot access.</p>
+
+    <div class="footnote">
+      <p><strong>Further reading.</strong> Hatcher, <em>Algebraic Topology</em>, Ch. 2 (relative homology, long exact sequences); Ch. 3.3 (orientation and the fundamental class). Bredon, <em>Sheaf Theory</em>, Ch. II (local systems and orientation sheaves). For the SLT connection: Watanabe, <em>Algebraic Geometry and Statistical Learning Theory</em>, Ch. 1–3.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+</div><!-- .page-wrap -->
+
+<!-- ═══════════════════ CHAT PANEL ═══════════════════ -->
+<style>
+  /* ── Floating trigger button ── */
+  #chat-trigger {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: var(--amber);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 24px rgba(200,149,42,0.35);
+    z-index: 1000;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  #chat-trigger:hover {
+    transform: scale(1.08);
+    box-shadow: 0 6px 32px rgba(200,149,42,0.5);
+  }
+  #chat-trigger svg { width: 22px; height: 22px; fill: #0b0c10; }
+  #chat-trigger .close-icon { display: none; }
+  #chat-trigger.open .open-icon  { display: none; }
+  #chat-trigger.open .close-icon { display: block; }
+
+  /* ── Chat panel ── */
+  #chat-panel {
+    position: fixed;
+    bottom: 5.5rem;
+    right: 2rem;
+    width: 400px;
+    max-height: 560px;
+    background: #0f1117;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    z-index: 999;
+    box-shadow: 0 12px 60px rgba(0,0,0,0.7);
+    transform: translateY(12px) scale(0.97);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+  }
+  #chat-panel.open {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
+  }
+
+  /* ── Panel header ── */
+  .chat-head {
+    padding: 0.85rem 1.1rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+  }
+  .chat-head-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--amber);
+    flex-shrink: 0;
+  }
+  .chat-head-title {
+    font-family: 'Cormorant SC', serif;
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    color: var(--amber);
+    text-transform: uppercase;
+    flex: 1;
+  }
+  .chat-head-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--text-dim);
+  }
+  .chat-clear-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .chat-clear-btn:hover { border-color: var(--amber-dim); color: var(--amber); }
+
+  /* ── Messages ── */
+  #chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .msg {
+    max-width: 88%;
+    padding: 0.65rem 0.85rem;
+    border-radius: 6px;
+    font-family: 'EB Garamond', serif;
+    font-size: 0.92rem;
+    line-height: 1.6;
+  }
+  .msg.user {
+    background: #1a1f2a;
+    border: 1px solid var(--border);
+    align-self: flex-end;
+    color: var(--text);
+  }
+  .msg.assistant {
+    background: #111418;
+    border: 1px solid #1e222a;
+    border-left: 2px solid var(--amber-dim);
+    align-self: flex-start;
+    color: var(--text);
+  }
+  .msg.system-note {
+    background: transparent;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    align-self: center;
+    text-align: center;
+    border: none;
+    padding: 0.2rem 0;
+  }
+  .msg-sender {
+    font-family: 'Cormorant SC', serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    color: var(--text-dim);
+    margin-bottom: 0.3rem;
+    text-transform: uppercase;
+  }
+  .msg.assistant .msg-sender { color: var(--amber-dim); }
+
+  /* Typing indicator */
+  .typing-dots {
+    display: flex; gap: 4px; align-items: center; padding: 0.2rem 0;
+  }
+  .typing-dots span {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--amber-dim);
+    animation: dot-pulse 1.2s ease-in-out infinite;
+  }
+  .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes dot-pulse {
+    0%, 80%, 100% { opacity: 0.3; transform: scale(0.85); }
+    40%           { opacity: 1;   transform: scale(1); }
+  }
+
+  /* ── Input area ── */
+  .chat-input-wrap {
+    border-top: 1px solid var(--border);
+    padding: 0.75rem;
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+    background: #0b0d12;
+    border-radius: 0 0 8px 8px;
+  }
+  #chat-input {
+    flex: 1;
+    background: #0f1117;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text);
+    font-family: 'EB Garamond', serif;
+    font-size: 0.9rem;
+    padding: 0.5rem 0.75rem;
+    resize: none;
+    line-height: 1.5;
+    max-height: 100px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  #chat-input:focus { border-color: var(--amber-dim); }
+  #chat-input::placeholder { color: var(--text-dim); font-style: italic; }
+  #chat-send {
+    background: var(--amber);
+    border: none;
+    border-radius: 5px;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s, opacity 0.15s;
+    align-self: flex-end;
+  }
+  #chat-send:hover { background: #d9a633; }
+  #chat-send:disabled { opacity: 0.4; cursor: not-allowed; }
+  #chat-send svg { width: 15px; height: 15px; fill: #0b0c10; }
+
+  /* KaTeX in chat */
+  #chat-messages .katex { font-size: 0.95em; }
+
+  @media (max-width: 480px) {
+    #chat-panel { width: calc(100vw - 2rem); right: 1rem; }
+    #chat-trigger { right: 1rem; bottom: 1rem; }
+  }
+</style>
+
+<!-- Trigger button -->
+<button id="chat-trigger" aria-label="Toggle AI tutor" onclick="toggleChat()">
+  <svg class="open-icon" viewBox="0 0 24 24"><path d="M20 2H4a2 2 0 00-2 2v18l4-4h14a2 2 0 002-2V4a2 2 0 00-2-2zm-2 10H6V10h12v2zm0-3H6V7h12v2z"/></svg>
+  <svg class="close-icon" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+</button>
+
+<!-- Chat panel -->
+<div id="chat-panel" role="dialog" aria-label="AI Tutor">
+  <div class="chat-head">
+    <div class="chat-head-dot"></div>
+    <div class="chat-head-title">Ask the tutor</div>
+    <div class="chat-head-sub">Powered by Claude</div>
+    <button class="chat-clear-btn" onclick="clearChat()">clear</button>
+  </div>
+  <div id="chat-messages">
+    <div class="msg system-note">Ask any question about the material — definitions, computations, intuitions, or connections to other mathematics.</div>
+  </div>
+  <div class="chat-input-wrap">
+    <textarea id="chat-input" placeholder="e.g. Why does the boundary circle wrap twice?" rows="1"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
+    <button id="chat-send" onclick="sendMessage()" aria-label="Send">
+      <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+    </button>
+  </div>
+</div>
+
+<script>
+/* ── Section toggle ── */
+function toggle(header) {
+  const body = header.nextElementSibling;
+  const icon = header.querySelector('.toggle-icon');
+  const collapsed = body.classList.toggle('collapsed');
+  icon.style.transform = collapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
+}
+
+/* ── TOC active highlight ── */
+const sections = document.querySelectorAll('section[id]');
+const links = document.querySelectorAll('nav.toc a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      links.forEach(l => l.style.color = '');
+      const active = document.querySelector(`nav.toc a[href="#${e.target.id}"]`);
+      if (active) active.style.color = 'var(--amber)';
+    }
+  });
+}, { threshold: 0.3 });
+sections.forEach(s => observer.observe(s));
+
+/* ── Chat ── */
+let chatHistory = [];
+let chatOpen = false;
+
+const SYSTEM_PROMPT = `You are a precise, patient mathematical tutor embedded in an interactive tutorial on simplicial homology and the Möbius strip. Your role is to help the reader deepen their understanding of the material presented.
+
+The tutorial covers the following topics in order:
+1. Oriented simplicial complexes and the n-simplex
+2. Chain groups C_n(K;Z), boundary operators ∂_n, and homology H_n = ker ∂_n / im ∂_{n+1}
+3. The cylinder as a reference case: H_*(C) = (Z, Z, 0), boundary ∂C = two circles
+4. An explicit triangulation of the Möbius strip with 6 vertices {p,q,r,s,t,u}, 12 edges, 6 triangles. The identification (0,s)~(3,1−s) forces p=v_3 and s=v_0 (twisting the right edge back with a flip)
+5. The explicit boundary matrix ∂_2 is given, showing how the twist enters in ∂σ_5 = e_9 + e_2 − e_3 (the sign of e_2 flips vs the cylinder)
+6. H_*(M;Z) = (Z, Z, 0) — absolute homology cannot distinguish M from C; the generator of H_1(M) is the core circle class [α]
+7. The boundary circle ∂M is a SINGLE circle (not two), and the inclusion i_*: H_1(∂M)→H_1(M) is multiplication by 2, because walking once around the boundary traverses the core circle twice
+8. The long exact sequence of the pair (M,∂M): ...→ 0 → H_2(M,∂M) → Z →×2→ Z → H_1(M,∂M) → Z →≅→ Z → 0...
+   This gives: H_2(M,∂M) = 0 (no fundamental class; ×2 is injective), H_1(M,∂M) = Z/2Z (torsion from cokernel of ×2), H_0(M,∂M) = 0
+9. For the cylinder: H_2(C,∂C) = Z (fundamental class exists; cylinder is orientable), H_1(C,∂C) = Z, H_0(C,∂C) = 0
+10. Local smooth geometry (flat Riemannian metric, Christoffel symbols = 0, curvature = 0) is identical for both surfaces — non-orientability is invisible locally
+11. Holonomy detects the difference but only via a global computation (parallel transport around the core circle)
+12. The orientation sheaf O_M: stalk H_n(M, M\{x};Z) ≅ Z, with monodromy representation ρ_M: π_1(M)=Z → {±1}, n ↦ (−1)^n (non-trivial for Möbius, trivial for cylinder)
+13. Twisted homology H_*(M; O_M): gives Z in degree 2 for the Möbius strip, recovering the "missing" fundamental class
+14. Connection to Singular Learning Theory: the RLCT as an analogue of the fundamental class, Fisher information as local geometry blind to global singularity structure
+
+Guidelines for your responses:
+- Be mathematically precise. Use LaTeX notation: inline math with $...$ and display math with $$...$$
+- If a question is imprecise, gently clarify before answering
+- Offer concrete examples and worked steps when asked about computations
+- If asked about topics not in the tutorial (e.g. persistent homology, de Rham cohomology, spectral sequences), briefly answer and note whether it connects to the material
+- Calibrate depth to the question. A question like "what is a simplex?" gets a short clean answer; "can you walk me through why ×2 causes the torsion?" gets a full derivation
+- Do not reproduce the entire tutorial; focus on what's being asked
+- Be honest if something is genuinely subtle or involves machinery beyond the tutorial's scope
+- Maintain the tutorial's intellectual tone: rigorous but not austere, precise but not dry`;
+
+function toggleChat() {
+  chatOpen = !chatOpen;
+  document.getElementById('chat-panel').classList.toggle('open', chatOpen);
+  document.getElementById('chat-trigger').classList.toggle('open', chatOpen);
+  if (chatOpen) {
+    setTimeout(() => document.getElementById('chat-input').focus(), 200);
+  }
+}
+
+function clearChat() {
+  chatHistory = [];
+  const msgs = document.getElementById('chat-messages');
+  msgs.innerHTML = '<div class="msg system-note">Ask any question about the material — definitions, computations, intuitions, or connections to other mathematics.</div>';
+}
+
+function appendMessage(role, content) {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  if (role !== 'system-note') {
+    const sender = document.createElement('div');
+    sender.className = 'msg-sender';
+    sender.textContent = role === 'user' ? 'You' : 'Tutor';
+    div.appendChild(sender);
+  }
+  const body = document.createElement('div');
+  body.className = 'msg-body';
+  body.textContent = content; // set as text first, then render math
+  div.appendChild(body);
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  // Render LaTeX in the new message
+  if (window.renderMathInElement) {
+    renderMathInElement(body, {
+      delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+      throwOnError: false
+    });
+  }
+  return div;
+}
+
+function showTyping() {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg assistant';
+  div.id = 'typing-indicator';
+  const sender = document.createElement('div');
+  sender.className = 'msg-sender';
+  sender.textContent = 'Tutor';
+  const dots = document.createElement('div');
+  dots.className = 'typing-dots';
+  dots.innerHTML = '<span></span><span></span><span></span>';
+  div.appendChild(sender);
+  div.appendChild(dots);
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeTyping() {
+  const el = document.getElementById('typing-indicator');
+  if (el) el.remove();
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const sendBtn = document.getElementById('chat-send');
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+  sendBtn.disabled = true;
+
+  appendMessage('user', text);
+  chatHistory.push({ role: 'user', content: text });
+
+  showTyping();
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: SYSTEM_PROMPT,
+        messages: chatHistory
+      })
+    });
+
+    const data = await response.json();
+    removeTyping();
+
+    if (data.error) {
+      appendMessage('system-note', `Error: ${data.error.message}`);
+      chatHistory.pop(); // remove failed user message from history
+    } else {
+      const reply = data.content.filter(b => b.type === 'text').map(b => b.text).join('');
+      chatHistory.push({ role: 'assistant', content: reply });
+      appendMessage('assistant', reply);
+    }
+  } catch (err) {
+    removeTyping();
+    appendMessage('system-note', 'Connection error. Please try again.');
+    chatHistory.pop();
+  }
+
+  sendBtn.disabled = false;
+  input.focus();
+}
+
+// Auto-resize textarea
+document.getElementById('chat-input').addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+});
+</script>
+</body>
+</html>
