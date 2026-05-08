@@ -119,6 +119,35 @@
   ul.disc{list-style:disc;}
   ol.numbered{list-style:decimal;}
 
+
+  /* Three.js viewers */
+  .viewer-wrap{width:100%;overflow:hidden;}
+  /* Introduction section */
+  .intro-section {
+    margin-bottom: 4rem;
+    padding-bottom: 3rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* GIF player */
+  .gif-stage { position:relative; cursor:pointer; overflow:hidden; border-radius:4px 4px 0 0; }
+  .gif-stage img.gif-img { display:block; width:100%; border-radius:4px 4px 0 0; }
+  .gif-stage canvas.gif-canvas { display:none; width:100%; border-radius:4px 4px 0 0; }
+  .gif-controls {
+    display:flex; align-items:center; gap:1rem;
+    padding:.55rem 1.1rem;
+    background:var(--bg3); border-top:1px solid var(--border);
+  }
+  .gif-btn {
+    font-family:'JetBrains Mono',monospace; font-size:.7rem;
+    background:var(--amber); color:var(--bg);
+    border:none; padding:.28rem .9rem; border-radius:3px;
+    cursor:pointer; letter-spacing:.04em; flex-shrink:0;
+    transition:background .15s;
+  }
+  .gif-btn:hover { background:#d9a633; }
+  .gif-hint { font-family:'JetBrains Mono',monospace; font-size:.64rem; color:var(--text-dim); }
+
   @media(max-width:860px){
     .page-wrap{grid-template-columns:1fr;}
     nav.toc{display:none;}
@@ -126,6 +155,7 @@
     .doc-header h1{font-size:2.1rem;}
   }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 <div class="page-wrap">
@@ -157,6 +187,45 @@
   <div class="meta">Topics: simplicial homology · boundary operators · long exact sequences · orientation sheaf · local vs. global topology</div>
 </header>
 
+<!-- Introduction -->
+<section class="intro-section">
+
+  <h3 style="margin-top:0; font-size:1.28rem;">What this tutorial is about</h3>
+
+  <p>The Möbius strip and an ordinary cylinder look almost identical at small scales. Both are smooth surfaces; both are flat — zero curvature everywhere. Place any local measuring instrument on either one and the readings will agree. There is no local geometric quantity — no curvature, no torsion, no Christoffel symbol — that can tell them apart.</p>
+
+  <p>Yet they are genuinely, profoundly different. One is orientable and one is not. On the cylinder you can paint one face red and the other blue and the colours will never meet; on the Möbius strip, there is only one face. This difference is a global topological property, and detecting it requires global tools.</p>
+
+  <p>This tutorial develops those tools from the ground up. The primary instrument is <em>simplicial homology</em> — a way of attaching algebraic groups to a topological space by triangulating it, forming chains of simplices, and measuring which chains are "closed" in a sense that cannot be explained by bounding something higher-dimensional. Applied to the pair (Möbius strip, boundary circle), homology produces a stark algebraic distinction: a torsion element $\mathbb{Z}/2\mathbb{Z}$ that has no counterpart in the cylinder, arising from a single factor of 2 in the boundary map. That factor of 2 is the direct algebraic trace of the half-twist.</p>
+
+  <div class="box" style="border-left:3px solid var(--steel); margin:1.8rem 0;">
+    <div class="box-label" style="color:var(--steel);">What you will gain</div>
+    <p style="margin-bottom:.7rem;">By the end of this tutorial you should be able to:</p>
+    <ol class="numbered" style="line-height:2;">
+      <li>Build a simplicial complex from scratch, compute its chain groups, and apply boundary operators to form the chain complex (§1–§4)</li>
+      <li>Extract homology groups as quotients of kernels by images, and interpret them geometrically (§2, §5)</li>
+      <li>Explain precisely why the Möbius strip and the cylinder have <em>identical</em> absolute homology — and why this forces us to use relative homology (§5)</li>
+      <li>Deploy the long exact sequence of a pair to derive $H_1(M,\partial M) = \mathbb{Z}/2\mathbb{Z}$ directly from the $\times 2$ boundary map (§6)</li>
+      <li>State rigorously why no local smooth geometric measurement can detect non-orientability, using the flat metric and holonomy argument (§7)</li>
+      <li>Describe the orientation sheaf, its monodromy representation, and why a fundamental class exists in twisted but not ordinary homology (§8)</li>
+    </ol>
+  </div>
+
+  <div class="box" style="border-left:3px solid var(--teal-dim); margin:1.8rem 0;">
+    <div class="box-label" style="color:var(--teal);">Prerequisites</div>
+    <p style="margin-bottom:.9rem;">The tutorial is designed for mathematically mature readers. The following background is assumed:</p>
+    <ul class="disc" style="line-height:2.1;">
+      <li><strong>Linear algebra</strong> — vector spaces, kernels, images, quotient spaces. You should be comfortable with the statement "the kernel of a linear map is a subspace."</li>
+      <li><strong>Group theory</strong> — abelian groups, subgroups, quotient groups, homomorphisms. The groups $\mathbb{Z}$, $\mathbb{Z}/n\mathbb{Z}$, and $\mathbb{Z}^2$ should be familiar objects.</li>
+      <li><strong>Some topology</strong> — an intuitive sense of continuous maps, open sets, and what it means for two spaces to be homeomorphic. Formal point-set topology is not required.</li>
+    </ul>
+    <p style="margin-top:.9rem;margin-bottom:0;">Algebraic topology itself is developed from scratch — no prior exposure is assumed. Some differential geometry (Riemannian metrics, connections, curvature) enriches §7 but is not needed to follow the argument. The brief remarks connecting these ideas to Singular Learning Theory in §9 assume familiarity with the RLCT and Fisher information geometry, but the rest of the tutorial stands entirely independently.</p>
+  </div>
+
+  <p style="color:var(--text-dim);font-size:.95rem;font-style:italic;">The four animations in §0 preview the entire journey visually before the formal development begins. The collapsible sections can be opened or closed independently — use the section headers to navigate.</p>
+
+</section>
+
 <!-- Visual intro -->
 <section id="s0" style="margin-bottom:4rem;">
   <div class="sec-header" onclick="toggle(this)">
@@ -165,55 +234,46 @@
     <span class="toggle-icon">▾</span>
   </div>
   <div class="sec-body">
-    <p>Four animations tell the story of this tutorial in sequence. Each one ends where the next begins: from the smooth surface you could hold in your hand, through the combinatorial skeleton that makes it computable, to the two key circles whose relationship carries all the homological information. Watch them in order, then return to them alongside the relevant sections.</p>
+    <p>Four interactive 3D viewers tell the story in sequence.
+    <strong style="color:var(--text)">Drag</strong> on any viewer to rotate freely &mdash; while playing or paused.
+    Use the <strong style="color:var(--text)">seek bar</strong> to jump to any moment, and
+    <strong style="color:var(--text)">Pause</strong> to freeze the view for study.</p>
 
-    <!-- Animation 1 -->
     <figure class="diagram" style="background:var(--bg);">
-      <img src="mobius_01_surface.gif"
-           alt="Möbius strip rotating smoothly in 3D"
-           style="width:100%;display:block;border-radius:4px 4px 0 0;">
+      <div id="viewer-1" class="viewer-wrap"></div>
       <figcaption>
-        <span class="fig-num">Anim. 1</span> — <strong style="color:var(--text)">The smooth surface.</strong>
-        The Möbius strip embedded in $\mathbb{R}^3$ as a parametric surface, coloured from teal (core, $v=0$) to amber (boundary edges, $|v|=1$). An amber dot traces a path along the strip — it must travel the full length <em>twice</em> before returning to its starting orientation, the signature of a one-sided surface. Connects to §1 (simplicial complexes) and §7 (local geometry).
+        <span class="fig-num">Anim. 1</span> &mdash; <strong style="color:var(--text)">The smooth surface.</strong>
+        Amber tracer along the central circle. After one revolution it turns rose (opposite face); it needs a second full revolution to return to the start with the same orientation. Labels at start, halfway, and return confirm the two-revolution cycle. Connects to &sect;1 and &sect;7.
       </figcaption>
     </figure>
 
-    <div style="text-align:center;color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:.8rem;padding:.5rem 0 .2rem;letter-spacing:.1em;">▼ &nbsp; triangulate the surface &nbsp; ▼</div>
+    <div style="text-align:center;color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:.8rem;padding:.5rem 0 .2rem;letter-spacing:.1em;">&#9660; &nbsp; triangulate the surface &nbsp; &#9660;</div>
 
-    <!-- Animation 2 -->
     <figure class="diagram" style="background:var(--bg);">
-      <img src="mobius_02_triangulation.gif"
-           alt="Simplicial triangulation materialising on the Möbius strip"
-           style="width:100%;display:block;border-radius:4px 4px 0 0;">
+      <div id="viewer-2" class="viewer-wrap"></div>
       <figcaption>
-        <span class="fig-num">Anim. 2</span> — <strong style="color:var(--text)">The simplicial triangulation.</strong>
-        The six triangles $\sigma_1\ldots\sigma_6$ materialise column by column, followed by the vertex labels $p,q,r,s,t,u$. These are the triangles of Fig. 3 and the columns of the $\partial_2$ matrix in §4. Note that $p$ and $s$ each appear at two geometrically separated locations — the identified corner pairs forced by the half-twist of Fig. 2.
+        <span class="fig-num">Anim. 2</span> &mdash; <strong style="color:var(--text)">Simplicial triangulation.</strong>
+        Edges materialise column by column, then vertex labels $p,q,r,s,t,u$ fade in. $p$ and $s$ appear at two separated locations &mdash; the identified corner pairs of the half-twist (Fig.&nbsp;2, &sect;4).
       </figcaption>
     </figure>
 
-    <div style="text-align:center;color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:.8rem;padding:.5rem 0 .2rem;letter-spacing:.1em;">▼ &nbsp; trace the boundary &nbsp; ▼</div>
+    <div style="text-align:center;color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:.8rem;padding:.5rem 0 .2rem;letter-spacing:.1em;">&#9660; &nbsp; trace the boundary &nbsp; &#9660;</div>
 
-    <!-- Animation 3 -->
     <figure class="diagram" style="background:var(--bg);">
-      <img src="mobius_03_boundary.gif"
-           alt="The single boundary circle of the Möbius strip tracing itself"
-           style="width:100%;display:block;border-radius:4px 4px 0 0;">
+      <div id="viewer-3" class="viewer-wrap"></div>
       <figcaption>
-        <span class="fig-num">Anim. 3</span> — <strong style="color:var(--text)">The boundary circle $\partial M$.</strong>
-        An amber dot traces the entire boundary edge in one continuous pass: along the bottom edge, through the identified corners, back along the top edge. A single closed loop — not two. This is the direct consequence of the identification in Fig. 2 (right), and why the map $i_*: H_1(\partial M) \to H_1(M)$ involves a single $\mathbb{Z}$, not $\mathbb{Z}^2$. Detailed in §5.
+        <span class="fig-num">Anim. 3</span> &mdash; <strong style="color:var(--text)">Boundary circle $\partial M$.</strong>
+        One continuous amber loop. Not two separate circles. This is why $i_*\colon H_1(\partial M)\to H_1(M)$ involves a single $\mathbb{Z}$. Detailed in &sect;5.
       </figcaption>
     </figure>
 
-    <div style="text-align:center;color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:.8rem;padding:.5rem 0 .2rem;letter-spacing:.1em;">▼ &nbsp; find the generator of H₁ &nbsp; ▼</div>
+    <div style="text-align:center;color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:.8rem;padding:.5rem 0 .2rem;letter-spacing:.1em;">&#9660; &nbsp; find the generator of H&#x2081; &nbsp; &#9660;</div>
 
-    <!-- Animation 4 -->
     <figure class="diagram" style="background:var(--bg);">
-      <img src="mobius_04_core.gif"
-           alt="The boundary circle winding twice around the core circle"
-           style="width:100%;display:block;border-radius:4px 4px 0 0;">
+      <div id="viewer-4" class="viewer-wrap"></div>
       <figcaption>
-        <span class="fig-num">Anim. 4</span> — <strong style="color:var(--text)">The core circle $\alpha$ and the $\times 2$ winding.</strong>
-        The teal dashed core circle $\alpha$ draws itself first — this is the generator of $H_1(M)\cong\mathbb{Z}$. Then the amber boundary circle $\partial M$ reappears. The equation at the base states the key relationship of equation (5): one loop around $\partial M$ equals two loops around $\alpha$, so $i_*: H_1(\partial M)\to H_1(M)$ is multiplication by 2. From that single fact, §6 derives both $H_2(M,\partial M)=0$ (no fundamental class) and the torsion $H_1(M,\partial M)=\mathbb{Z}/2\mathbb{Z}$.
+        <span class="fig-num">Anim. 4</span> &mdash; <strong style="color:var(--text)">Core circle $\alpha$ and the $\times 2$ winding.</strong>
+        Teal core $\alpha$ draws first; amber $\partial M$ follows. Label at top: one loop around $\partial M$ equals two loops around $\alpha$, so $i_*$ is multiplication by 2 &mdash; driving the entire long exact sequence of &sect;6.
       </figcaption>
     </figure>
 
@@ -980,6 +1040,260 @@ function toggle(header){const body=header.nextElementSibling;const icon=header.q
 const sections=document.querySelectorAll('section[id]');const links=document.querySelectorAll('nav.toc a');
 const observer=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){links.forEach(l=>l.style.color='');const a=document.querySelector(`nav.toc a[href="#${e.target.id}"]`);if(a)a.style.color='var(--amber)';}});},{threshold:.3});
 sections.forEach(s=>observer.observe(s));
+
+// ── GIF pause / play ─────────────────────────────────────────────
+// Strategy: on pause, draw the current GIF frame to a canvas and
+// display that instead; on play, restore and reload the <img>.
+document.querySelectorAll('.gif-player').forEach(function(player) {
+  var stage  = player.querySelector('.gif-stage');
+  var img    = player.querySelector('.gif-img');
+  var btn    = player.querySelector('.gif-btn');
+
+  // Create a canvas that sits on top of the img when paused
+  var canvas = document.createElement('canvas');
+  canvas.className = 'gif-canvas';
+  canvas.style.cssText = 'display:none;width:100%;border-radius:4px 4px 0 0;';
+  stage.appendChild(canvas);
+
+  var playing = true;
+  var origSrc = img.src;
+
+  function pauseGif() {
+    if (!playing) return;
+    var ctx = canvas.getContext('2d');
+    // naturalWidth/Height may be 0 until load; fall back to layout size
+    canvas.width  = img.naturalWidth  || img.offsetWidth;
+    canvas.height = img.naturalHeight || img.offsetHeight;
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    img.style.display    = 'none';
+    canvas.style.display = 'block';
+    btn.innerHTML = '▶ Play';
+    playing = false;
+  }
+
+  function playGif() {
+    if (playing) return;
+    canvas.style.display = 'none';
+    img.style.display    = 'block';
+    // Reload the src to restart from frame 1
+    img.src = '';
+    setTimeout(function() { img.src = origSrc; }, 16);
+    btn.innerHTML = '⏸ Pause';
+    playing = true;
+  }
+
+  function toggle() { playing ? pauseGif() : playGif(); }
+
+  stage.addEventListener('click', toggle);
+  btn.addEventListener('click', function(e) { e.stopPropagation(); toggle(); });
+});
+</script>
+<script>
+(function(){
+'use strict';
+const MR=1.25,MW=0.52;
+function mPt(u,v){const r=MR+v*MW*Math.cos(u*0.5);return new THREE.Vector3(r*Math.cos(u),r*Math.sin(u),v*MW*Math.sin(u*0.5));}
+function r2v(xr,yr){return mPt(xr*2*Math.PI/3,2*yr-1);}
+function makeSurf(NU,NV,op){
+  const pos=[],col=[],idx=[];
+  for(let i=0;i<=NV;i++)for(let j=0;j<=NU;j++){
+    const u=j/NU*Math.PI*2,v=(i/NV-0.5)*2,p=mPt(u,v);
+    pos.push(p.x,p.y,p.z);
+    const t=(v+1)/2,d=0.5+0.5*Math.cos(u),L=0.48+0.52*d;
+    col.push(((1-t)*0x3a+t*0xc8)/255*L,((1-t)*0x8a+t*0x95)/255*L,((1-t)*0x8a+t*0x2a)/255*L);
+  }
+  for(let i=0;i<NV;i++)for(let j=0;j<NU;j++){
+    const a=i*(NU+1)+j,b=a+1,c=(i+1)*(NU+1)+j,d=c+1;idx.push(a,b,c,b,d,c);
+  }
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  geo.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
+  geo.setIndex(idx);geo.computeVertexNormals();
+  return new THREE.Mesh(geo,new THREE.MeshPhongMaterial({vertexColors:true,side:THREE.DoubleSide,transparent:op<1,opacity:op,shininess:12}));
+}
+function makeProgLine(pts,color){
+  const buf=new Float32Array(pts.length*3);
+  pts.forEach((p,i)=>{buf[i*3]=p.x;buf[i*3+1]=p.y;buf[i*3+2]=p.z;});
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(buf,3));
+  geo.setDrawRange(0,2);
+  return{line:new THREE.Line(geo,new THREE.LineBasicMaterial({color})),geo,pts};
+}
+function makeDot(color,size){
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.Float32BufferAttribute([0,0,0],3));
+  return new THREE.Points(geo,new THREE.PointsMaterial({color,size:size||0.12,sizeAttenuation:true}));
+}
+function moveDot(dot,p){const a=dot.geometry.attributes.position;a.setXYZ(0,p.x,p.y,p.z);a.needsUpdate=true;}
+function addDimTri(scene,op){
+  const p=r2v(0,0),q=r2v(1,0),r=r2v(2,0),s=r2v(3,0),tv=r2v(1,1),u=r2v(2,1);
+  [[p,q],[q,tv],[p,tv],[tv,s],[p,s],[q,r],[r,u],[q,u],[u,tv],[r,s],[s,p],[r,p],[p,u],[r,u]].forEach(([a,b])=>{
+    const geo=new THREE.BufferGeometry();
+    geo.setAttribute('position',new THREE.Float32BufferAttribute([a.x,a.y,a.z,b.x,b.y,b.z],3));
+    scene.add(new THREE.Line(geo,new THREE.LineBasicMaterial({color:0x3a8a8a,transparent:true,opacity:op})));
+  });
+}
+
+class Viewer{
+  constructor(el,speed){this.el=el;this.speed=speed||0.0008;this.t=0;this.playing=true;this.phi=0.30;this.theta=-1.08;this.camR=5.4;this._boot();}
+  _boot(){
+    const CW=this.el.offsetWidth||700,CH=Math.round(CW*0.70);
+    this.ren=new THREE.WebGLRenderer({antialias:true});
+    this.ren.setSize(CW,CH);this.ren.setPixelRatio(Math.min(window.devicePixelRatio,2));this.ren.setClearColor(0x0b0c10);
+    const cvs=this.ren.domElement;
+    cvs.style.cssText='display:block;width:100%;cursor:grab;touch-action:none;';
+    this.lblDiv=document.createElement('div');
+    this.lblDiv.style.cssText='position:absolute;inset:0;pointer-events:none;overflow:hidden;height:'+CH+'px;';
+    const wrap=document.createElement('div');wrap.style.position='relative';wrap.append(cvs,this.lblDiv);
+    this.el.append(wrap,this._bar());
+    this.scene=new THREE.Scene();this.cam=new THREE.PerspectiveCamera(42,CW/CH,0.1,100);this._posC();
+    this.scene.add(new THREE.AmbientLight(0xffffff,0.55));
+    const dl=new THREE.DirectionalLight(0xffffff,0.75);dl.position.set(2,3,2);this.scene.add(dl);
+    this._orbit(cvs);
+    if(typeof ResizeObserver!=='undefined')new ResizeObserver(()=>this._resize()).observe(this.el);
+    this.build();this.draw(0);this._loop();
+  }
+  _bar(){
+    const bar=document.createElement('div');
+    bar.style.cssText='display:flex;align-items:center;gap:.75rem;padding:.52rem 1rem;background:#181b22;border-top:1px solid #252830;';
+    this.btn=document.createElement('button');
+    this.btn.textContent='⏸ Pause';
+    this.btn.style.cssText="font-family:'JetBrains Mono',monospace;font-size:.7rem;background:#c8952a;color:#0b0c10;border:none;padding:.26rem .9rem;border-radius:3px;cursor:pointer;flex-shrink:0;";
+    this.btn.onclick=()=>{this.playing=!this.playing;this.btn.textContent=this.playing?'⏸ Pause':'▶ Play';};
+    this.seek=document.createElement('input');
+    this.seek.type='range';this.seek.min=0;this.seek.max=1000;this.seek.value=0;
+    this.seek.style.cssText='flex:1;height:3px;outline:none;cursor:pointer;accent-color:#c8952a;';
+    this.seek.oninput=()=>{this.t=this.seek.value/1000;this.draw(this.t);};
+    this.pct=document.createElement('span');this.pct.textContent='0%';
+    this.pct.style.cssText="font-family:'JetBrains Mono',monospace;font-size:.65rem;color:#5a5550;white-space:nowrap;min-width:2.6rem;text-align:right;";
+    const hint=document.createElement('span');hint.textContent='drag to rotate';
+    hint.style.cssText="font-family:'JetBrains Mono',monospace;font-size:.6rem;color:#353330;white-space:nowrap;";
+    bar.append(this.btn,this.seek,this.pct,hint);return bar;
+  }
+  _posC(){this.cam.position.set(this.camR*Math.cos(this.phi)*Math.cos(this.theta),this.camR*Math.sin(this.phi),this.camR*Math.cos(this.phi)*Math.sin(this.theta));this.cam.lookAt(0,0,0);}
+  _resize(){const CW=this.el.offsetWidth,CH=Math.round(CW*0.70);this.ren.setSize(CW,CH);this.cam.aspect=CW/CH;this.cam.updateProjectionMatrix();this.lblDiv.style.height=CH+'px';}
+  _orbit(cvs){
+    let dn=false,lx=0,ly=0;
+    const start=e=>{dn=true;const s=e.touches?e.touches[0]:e;lx=s.clientX;ly=s.clientY;cvs.style.cursor='grabbing';};
+    const end=()=>{dn=false;cvs.style.cursor='grab';};
+    const move=e=>{if(!dn)return;const s=e.touches?e.touches[0]:e;this.theta-=(s.clientX-lx)*0.013;this.phi=Math.max(-1.3,Math.min(1.3,this.phi+(s.clientY-ly)*0.013));lx=s.clientX;ly=s.clientY;this._posC();};
+    cvs.addEventListener('mousedown',start);
+    cvs.addEventListener('touchstart',e=>{e.preventDefault();start(e);},{passive:false});
+    window.addEventListener('mouseup',end);window.addEventListener('touchend',end);
+    window.addEventListener('mousemove',move);
+    window.addEventListener('touchmove',e=>{if(dn){e.preventDefault();move(e);}},{passive:false});
+  }
+  _loop(){requestAnimationFrame(()=>this._loop());if(this.playing){this.t=(this.t+this.speed)%1;this.seek.value=Math.round(this.t*1000);this.pct.textContent=Math.round(this.t*100)+'%';this.draw(this.t);}this.ren.render(this.scene,this.cam);}
+  lbl(text,color){color=color||'#c8952a';const d=document.createElement('div');d.textContent=text;d.style.cssText='position:absolute;font-family:\'JetBrains Mono\',monospace;font-size:.64rem;color:'+color+';background:rgba(11,12,16,.92);padding:.16rem .52rem;border-radius:3px;border:1px solid '+color+'50;transform:translate(-50%,-130%);display:none;white-space:nowrap;pointer-events:none;';this.lblDiv.appendChild(d);return d;}
+  show(el,v3,on){if(!on){el.style.display='none';return;}const CW=this.ren.domElement.clientWidth,CH=this.ren.domElement.clientHeight,p=v3.clone().project(this.cam);if(p.z>0.998){el.style.display='none';return;}el.style.left=((p.x*.5+.5)*CW)+'px';el.style.top=((-.5*p.y+.5)*CH)+'px';el.style.display='block';}
+  build(){}draw(t){}
+}
+
+class S1 extends Viewer{
+  build(){
+    this.scene.add(makeSurf(80,28,0.86));
+    const N=600,pts=[];
+    for(let i=0;i<=N;i++)pts.push(mPt((i/N)*4*Math.PI%(2*Math.PI),0));
+    const{line,geo}=makeProgLine(pts,0xc8952a);
+    this.tGeo=geo;this.tN=N;this.scene.add(line);
+    this.dot=makeDot(0xc8952a,0.13);this.scene.add(this.dot);
+    const sp=mPt(0,0),sg=new THREE.BufferGeometry();
+    sg.setAttribute('position',new THREE.Float32BufferAttribute([sp.x,sp.y,sp.z],3));
+    this.scene.add(new THREE.Points(sg,new THREE.PointsMaterial({color:0x3a8a5a,size:0.11,sizeAttenuation:true})));
+    this.lS=this.lbl('Start  (u = 0)','#3a8a5a');
+    this.lH=this.lbl('1 revolution — now on the opposite face','#c8952a');
+    this.lR=this.lbl('2 revolutions — back to start, same orientation ✓','#3a8a8a');
+  }
+  draw(t){
+    const n=Math.max(2,Math.round(t*this.tN));
+    this.tGeo.setDrawRange(0,n);
+    const u=n/this.tN*4*Math.PI;moveDot(this.dot,mPt(u%(2*Math.PI),0));
+    this.dot.material.color.setHex(t>0.50&&t<0.99?0xa05060:0xc8952a);
+    const sp=mPt(0,0);
+    this.show(this.lS,sp.clone().add(new THREE.Vector3(0,0.30,0)),true);
+    this.show(this.lH,sp.clone().add(new THREE.Vector3(0.45,0.30,0)),t>0.44&&t<0.60);
+    this.show(this.lR,sp.clone().add(new THREE.Vector3(0,-0.38,0)),t>0.90);
+  }
+}
+
+class S2 extends Viewer{
+  build(){
+    this.scene.add(makeSurf(80,28,0.34));
+    const p=r2v(0,0),q=r2v(1,0),r=r2v(2,0),s=r2v(3,0),tv=r2v(1,1),u=r2v(2,1);
+    const grps=[{c:0x3a8a8a,e:[[p,q],[q,tv],[p,tv],[tv,s],[p,s]]},{c:0x5aacac,e:[[q,r],[r,u],[q,u],[u,tv]]},{c:0x7abcbc,e:[[r,s],[s,p],[r,p],[p,u],[r,u]]}];
+    this.edges=[];
+    grps.forEach(({c,e})=>e.forEach(([a,b])=>{const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute([a.x,a.y,a.z,b.x,b.y,b.z],3));const ln=new THREE.Line(geo,new THREE.LineBasicMaterial({color:c,transparent:true,opacity:0}));this.scene.add(ln);this.edges.push(ln);}));
+    const vl=[['p',p,'#c8952a'],['q',q,'#c8952a'],['r',r,'#c8952a'],['s',s,'#a05060'],['t',tv,'#c8952a'],['u',u,'#c8952a']];
+    this.verts=vl.map(([nm,pt,col])=>{const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute([pt.x,pt.y,pt.z],3));const dot=new THREE.Points(geo,new THREE.PointsMaterial({color:parseInt(col.replace('#','0x')),size:0.10,transparent:true,opacity:0,sizeAttenuation:true}));this.scene.add(dot);return{nm,pt,dot,lbl:this.lbl(nm,col)};});
+    this.lT=this.lbl('p and s appear at two locations — identified corners','#a05060');
+  }
+  draw(t){
+    const ne=this.edges.length,et=Math.max(0,(t-0.08)/0.62);
+    this.edges.forEach((e,i)=>e.material.opacity=Math.min(0.80,Math.max(0,(et*ne-i)*0.80)));
+    const vt=Math.max(0,(t-0.52)/0.32),nv=this.verts.length;
+    this.verts.forEach((v,i)=>{v.dot.material.opacity=Math.min(1,Math.max(0,vt*nv-i));const la=Math.max(0,(t-0.72)/0.18);this.show(v.lbl,v.pt.clone().add(new THREE.Vector3(0,0.14,0)),la>i/nv);});
+    this.show(this.lT,r2v(0,0).clone().add(new THREE.Vector3(0,0.40,0)),t>0.85);
+  }
+}
+
+class S3 extends Viewer{
+  build(){
+    this.scene.add(makeSurf(80,28,0.26));addDimTri(this.scene,0.20);
+    const N=300,pts=[];
+    for(let i=0;i<=N/2;i++)pts.push(r2v(i/(N/2)*3,0));
+    for(let i=0;i<=N/2;i++)pts.push(r2v(3-i/(N/2)*3,1));
+    const{line,geo}=makeProgLine(pts,0xc8952a);
+    this.bGeo=geo;this.bPts=pts;this.scene.add(line);
+    this.dot=makeDot(0xc8952a,0.13);this.scene.add(this.dot);
+    this.lB=this.lbl('∂M — single closed loop','#c8952a');
+    this.lC=this.lbl('(cylinder has two separate circles)','#5a5550');
+  }
+  draw(t){
+    const n=Math.max(2,Math.round(t*(this.bPts.length-1)));
+    this.bGeo.setDrawRange(0,n);moveDot(this.dot,this.bPts[Math.min(n,this.bPts.length-1)]);
+    const mid=this.bPts[Math.round(this.bPts.length*0.22)];
+    this.show(this.lB,mid.clone().multiplyScalar(1.30).add(new THREE.Vector3(0,0.16,0)),t>0.52);
+    this.show(this.lC,mid.clone().multiplyScalar(1.30).add(new THREE.Vector3(0,-0.14,0)),t>0.68);
+  }
+}
+
+class S4 extends Viewer{
+  build(){
+    this.scene.add(makeSurf(80,28,0.22));addDimTri(this.scene,0.15);
+    const N=300,cP=[],bP=[];
+    for(let i=0;i<=N;i++)cP.push(r2v(i/N*3,0.5));
+    for(let i=0;i<=N/2;i++)bP.push(r2v(i/(N/2)*3,0));
+    for(let i=0;i<=N/2;i++)bP.push(r2v(3-i/(N/2)*3,1));
+    const{line:cl,geo:cg}=makeProgLine(cP,0x3a8a8a);
+    const{line:bl,geo:bg}=makeProgLine(bP,0xc8952a);
+    this.cGeo=cg;this.cPts=cP;this.bGeo=bg;this.bPts=bP;
+    this.scene.add(cl);this.scene.add(bl);
+    this.lA=this.lbl('α — core circle, generator of H₁(M) ≅ ℤ','#3a8a8a');
+    this.lB=this.lbl('∂M — boundary circle','#c8952a');
+    this.lX=this.lbl('1 loop around ∂M = 2 loops around α  ⟹  i₊ = ×2','#d4cfc8');
+  }
+  draw(t){
+    const cn=Math.max(2,Math.round(Math.min(1,t/0.35)*(this.cPts.length-1)));
+    this.cGeo.setDrawRange(0,cn);
+    const bt=Math.max(0,(t-0.38)/0.32),bn=Math.max(0,Math.round(bt*(this.bPts.length-1)));
+    this.bGeo.setDrawRange(0,Math.max(0,bn));
+    const cm=this.cPts[Math.round(this.cPts.length*0.18)];
+    this.show(this.lA,cm.clone().multiplyScalar(1.22).add(new THREE.Vector3(0,0.18,0)),t>0.32);
+    if(bn>2){const bm=this.bPts[Math.round(this.bPts.length*0.22)];this.show(this.lB,bm.clone().multiplyScalar(1.30).add(new THREE.Vector3(0,0.15,0)),t>0.65);}
+    else this.lB.style.display='none';
+    const ct=this.cPts[Math.round(this.cPts.length*0.5)];
+    this.show(this.lX,ct.clone().add(new THREE.Vector3(0,0.90,0)),t>0.76);
+  }
+}
+
+function boot(){
+  [['viewer-1',S1,0.00080],['viewer-2',S2,0.00072],['viewer-3',S3,0.00075],['viewer-4',S4,0.00070]].forEach(([id,Cls,sp])=>{
+    const el=document.getElementById(id);if(el)new Cls(el,sp);
+  });
+}
+document.readyState==='loading'?document.addEventListener('DOMContentLoaded',boot):boot();
+}());
+
 </script>
 </body>
 </html>
